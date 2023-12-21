@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Start Deployment
-        uses: TapTap21/docker-remote-deployment-action
+        uses: TapTap21/docker-remote-deployment-action@v1.1
         with:
           remote_docker_host: ${{ secrets.DOCKER_SSH_HOST }}
           ssh_port: ${{ secrets.DOCKER_SSH_PORT }}
