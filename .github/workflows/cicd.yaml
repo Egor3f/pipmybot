@@ -6,7 +6,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Deploy to Docker
-        uses: wshihadeh/docker-deployment-action@v1
+        uses: wshihadeh/docker-deployment-action@v2
         with:
           remote_docker_host: ${{ secrets.DOCKER_SSH_HOST }}
           remote_docker_port: ${{ secrets.DOCKER_SSH_PORT }}
