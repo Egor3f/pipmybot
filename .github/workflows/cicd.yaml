@@ -15,10 +15,10 @@ jobs:
           target: "/home/deployer/pipmy_bot"
       - uses: appleboy/ssh-action@v1.0.0
         env:
-          TELEGRAM_TOKEN: ${{ TELEGRAM_TOKEN }}
-          OPENAI_TOKEN: ${{ OPENAI_TOKEN }}
-          OPENAI_PROXY: ${{ OPENAI_PROXY }}
-          CHATS_WHITELIST: ${{ CHATS_WHITELIST }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
+          OPENAI_PROXY: ${{ secrets.OPENAI_PROXY }}
+          CHATS_WHITELIST: ${{ secrets.CHATS_WHITELIST }}
         with:
           host: ${{ secrets.DOCKER_SSH_HOST }}
           port: ${{ secrets.DOCKER_SSH_PORT }}
