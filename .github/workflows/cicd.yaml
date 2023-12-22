@@ -5,30 +5,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Start Deployment
-        uses: TapTap21/docker-remote-deployment-action@v1.1
+      - uses: appleboy/scp-action@v0.1.4
         with:
-          remote_docker_host: ${{ secrets.DOCKER_SSH_HOST }}
-          ssh_port: ${{ secrets.DOCKER_SSH_PORT }}
-          ssh_private_key: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
-          ssh_public_key: ${{ secrets.DOCKER_SSH_PUBLIC_KEY }}
-          stack_file_name: docker-compose.yml
-#          docker_login_password: ${{ secrets.DOCKER_REPO_PASSWORD }}
-#          docker_login_user: ${{ secrets.DOCKER_REPO_USERNAME }}
-#          docker_login_registry: ${{ steps.login-ecr.outputs.registry }}
-          args: up -d
-#      - name: Deploy to Docker
-#        uses: wshihadeh/docker-deployment-action@v2
-#        with:
-#          remote_docker_host: ${{ secrets.DOCKER_SSH_HOST }}
-#          remote_docker_port: ${{ secrets.DOCKER_SSH_PORT }}
-#          ssh_private_key: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
-#          ssh_public_key: ${{ secrets.DOCKER_SSH_PUBLIC_KEY }}
-#          deployment_mode: docker-compose
-#          copy_stack_file: true
-#          deploy_path: /root/my-deployment
-#          stack_file_name: docker-compose.yml
-#          keep_files: 5
-#          args: up -d
-#          docker_prune: 'true'
-#          pull_images_first: 'false'
+          host: ${{ secrets.DOCKER_SSH_HOST }}
+          username: deployer
+          port: ${{ secrets.DOCKER_SSH_PORT }}
+          key: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
+          source: "*"
+          target: "/home/deployer/pipmy_bot"
+      - uses: appleboy/ssh-action@v1.0.0
+        env:
+          TELEGRAM_TOKEN: ${{ TELEGRAM_TOKEN }}
+          OPENAI_TOKEN: ${{ OPENAI_TOKEN }}
+          OPENAI_PROXY: ${{ OPENAI_PROXY }}
+          CHATS_WHITELIST: ${{ CHATS_WHITELIST }}
+        with:
+          host: ${{ secrets.DOCKER_SSH_HOST }}
+          port: ${{ secrets.DOCKER_SSH_PORT }}
+          username: deployer
+          key: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
+          envs: TELEGRAM_TOKEN,OPENAI_TOKEN,OPENAI_PROXY,CHATS_WHITELIST
+          script: |
+            cd /home/deployer/pipmy_bot
+            docker-compose up -d --build
