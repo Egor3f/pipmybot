@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
 	tele "gopkg.in/telebot.v3"
 	"gopkg.in/telebot.v3/middleware"
@@ -10,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"time"
 )
 
 type Config struct {
@@ -17,6 +20,7 @@ type Config struct {
 	OpenAIToken    string  `env:"OPENAI_TOKEN" env-required:"true"`
 	OpenAIProxy    string  `env:"OPENAI_PROXY" env-required:"true"`
 	ChatsWhitelist []int64 `env:"CHATS_WHITELIST"`
+	Redis          string  `env:"REDIS" env-required:"true"`
 }
 
 func main() {
@@ -45,8 +49,11 @@ func main() {
 		Transport: transport,
 	}
 	ai := openai.NewClientWithConfig(aiConfig)
+
+	rediska := redis.NewClient(&redis.Options{Addr: cfg.Redis})
+
 	setupMiddlewares(cfg, bot)
-	setupHandlers(cfg, bot, ai)
+	setupHandlers(cfg, bot, ai, rediska)
 	bot.Start()
 }
 
@@ -66,12 +73,25 @@ func restrictChats(whitelist []int64) tele.MiddlewareFunc {
 	}
 }
 
-func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client) {
+func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.Client) {
 	bot.Handle(tele.OnSticker, func(ctx tele.Context) error {
 		const fuckSummer = "AgADMToAAklRsEg"
+		const lastSentKey = "fuckSummerSent"
+		const sendTimeout = 10 * time.Second
 		if ctx.Message().Sticker.UniqueID == fuckSummer {
 			log.Println("нахуй лету")
-			return ctx.Reply(ctx.Message().Sticker)
+			if cmdRes := rediska.Exists(context.TODO(), lastSentKey); cmdRes.Err() == nil && cmdRes.Val() == 1 {
+				log.Println("уже слали лету нахуй. ждем...")
+				return nil
+			}
+			err := ctx.Reply(ctx.Message().Sticker)
+			if err == nil {
+				cmdRes := rediska.SetEx(context.TODO(), lastSentKey, ".", sendTimeout)
+				if cmdRes.Err() != nil {
+					log.Printf("%v", cmdRes.Err())
+				}
+			}
+			return err
 		}
 		return nil
 	})

@@ -4,8 +4,19 @@ services:
   app:
     build: .
     restart: unless-stopped
+    depends_on:
+      - redis
     environment:
       - TELEGRAM_TOKEN=$TELEGRAM_TOKEN
       - OPENAI_TOKEN=$OPENAI_TOKEN
       - OPENAI_PROXY=$OPENAI_PROXY
       - CHATS_WHITELIST=$CHATS_WHITELIST
+      - REDIS=redis:6379
+  redis:
+    image: redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+volumes:
+  redis_data:
