@@ -78,45 +78,55 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	bot.Handle(tele.OnSticker, func(ctx tele.Context) error {
 		const fuckSummer = "AgADMToAAklRsEg"
 
-		const lastSentKey = "fuckSummerSent"
-		const sendTimeout = 10 * time.Second
-
-		const userTimeout = 2 * time.Minute
-		const userRateWithinTimeout = 5
-
 		if ctx.Message().Sticker.UniqueID == fuckSummer {
 			log.Println("нахуй лету")
-			if cmdRes := rediska.Exists(context.TODO(), lastSentKey); cmdRes.Err() == nil && cmdRes.Val() == 1 {
-				log.Println("уже слали лету нахуй. ждем...")
-			} else {
-				err := ctx.Reply(ctx.Message().Sticker)
-				if err == nil {
-					cmdRes := rediska.SetEx(context.TODO(), lastSentKey, ".", sendTimeout)
-					if cmdRes.Err() != nil {
-						log.Printf("setex error: %v", cmdRes.Err())
-					}
-				}
+			replyFuckSummer(ctx, rediska)
+			if checkCalmDownFuckSummer(ctx, rediska, ai) {
+				sendCalmDownFuckSummer(ctx, ai, rediska)
 			}
-
-			userLimitKey := fmt.Sprintf("fuckSummerCount_%d", ctx.Message().Sender.ID)
-			incrRes, err := rediska.Incr(context.TODO(), userLimitKey).Result()
-			if err == nil {
-				log.Printf("%s = %d", userLimitKey, incrRes)
-				rediska.Expire(context.TODO(), userLimitKey, userTimeout)
-				if incrRes >= userRateWithinTimeout {
-					calmDownFuckSummer(ctx, ai, rediska)
-					rediska.Del(context.TODO(), userLimitKey)
-				}
-			} else {
-				log.Printf("incr error: %v", err)
-			}
-			return err
+			return nil
 		}
 		return nil
 	})
 }
 
-func calmDownFuckSummer(ctx tele.Context, ai *openai.Client, rediska *redis.Client) {
+func replyFuckSummer(ctx tele.Context, rediska *redis.Client) {
+	const lastSentKey = "fuckSummerSent"
+	const sendTimeout = 10 * time.Second
+
+	if cmdRes := rediska.Exists(context.TODO(), lastSentKey); cmdRes.Err() == nil && cmdRes.Val() == 1 {
+		log.Println("уже слали лету нахуй. ждем...")
+	} else {
+		err := ctx.Reply(ctx.Message().Sticker)
+		if err == nil {
+			cmdRes := rediska.SetEx(context.TODO(), lastSentKey, ".", sendTimeout)
+			if cmdRes.Err() != nil {
+				log.Printf("setex error: %v", cmdRes.Err())
+			}
+		}
+	}
+}
+
+func checkCalmDownFuckSummer(ctx tele.Context, rediska *redis.Client, ai *openai.Client) (toCalmDown bool) {
+	const userTimeout = 2 * time.Minute
+	const userRateWithinTimeout = 5
+
+	userLimitKey := fmt.Sprintf("fuckSummerCount_%d", ctx.Message().Sender.ID)
+	incrRes, err := rediska.Incr(context.TODO(), userLimitKey).Result()
+	if err == nil {
+		log.Printf("%s = %d", userLimitKey, incrRes)
+		rediska.Expire(context.TODO(), userLimitKey, userTimeout)
+		if incrRes >= userRateWithinTimeout {
+			toCalmDown = true
+			rediska.Del(context.TODO(), userLimitKey)
+		}
+	} else {
+		log.Printf("incr error: %v", err)
+	}
+	return
+}
+
+func sendCalmDownFuckSummer(ctx tele.Context, ai *openai.Client, rediska *redis.Client) {
 	const calmDownCache = "calmDownFuckSummerCache"
 	const namePlaceholder = "Джон"
 	calmDownMessage, err := rediska.Get(context.TODO(), calmDownCache).Result()
