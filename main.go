@@ -93,6 +93,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 
 	bot.Handle(tele.OnText, func(ctx tele.Context) error {
 		if cfg.Debug || rand.Int()%20 == 0 {
+			log.Println("язвим...")
 			sendFunnyReply(ctx, ai)
 		}
 
@@ -102,7 +103,8 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			"не понял",
 			"че", "чё",
 		}
-		if ctx.Message().ThreadID == 0 && ctx.Message().ReplyTo != nil && stringContains(ctx.Message().Text, explainWord) {
+		if ctx.Message().ReplyTo != nil && stringContains(ctx.Message().Text, explainWord) {
+			log.Println("what???")
 			replyToText := ctx.Message().ReplyTo.Text
 			replyToText = strings.TrimSpace(replyToText)
 			if strings.Count(replyToText, " ") == 0 {
