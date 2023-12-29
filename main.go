@@ -92,10 +92,10 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	})
 
 	bot.Handle(tele.OnText, func(ctx tele.Context) error {
-		if cfg.Debug || rand.Int()%20 == 0 {
+		/*if cfg.Debug || rand.Int()%20 == 0 {
 			log.Println("язвим...")
 			sendFunnyReply(ctx, ai)
-		}
+		}*/
 
 		explainWord := []string{
 			"обьясни", "объясни",
