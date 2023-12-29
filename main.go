@@ -84,7 +84,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			log.Println("нахуй лету")
 			replyFuckSummer(ctx, rediska)
 			if checkCalmDownFuckSummer(ctx, rediska, ai) {
-				sendCalmDownFuckSummer(ctx, ai, rediska)
+				sendCalmDownFuckSummer(ctx, rediska, ai)
 			}
 			return nil
 		}

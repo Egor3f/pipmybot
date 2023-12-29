@@ -47,7 +47,7 @@ func checkCalmDownFuckSummer(ctx telebot.Context, rediska *redis.Client, ai *ope
 	return
 }
 
-func sendCalmDownFuckSummer(ctx telebot.Context, ai *openai.Client, rediska *redis.Client) {
+func sendCalmDownFuckSummer(ctx telebot.Context, rediska *redis.Client, ai *openai.Client) {
 	const calmDownCache = "calmDownFuckSummerCache"
 	const namePlaceholder = "Джон"
 	calmDownMessage, err := rediska.Get(context.TODO(), calmDownCache).Result()
