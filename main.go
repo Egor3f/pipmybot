@@ -106,8 +106,12 @@ func sendFunnyReply(ctx tele.Context, ai *openai.Client) {
 		return
 	}
 	const preprompt = "Ты шутливый чат бот, добавленный в группу. Ты должен язвительно комментировать сообщения. Отвечай коротко"
+	model := openai.GPT3Dot5Turbo1106
+	if rand.Int()%2 == 0 {
+		model = openai.GPT4TurboPreview
+	}
 	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model: openai.GPT4TurboPreview,
+		Model: model,
 		Messages: []openai.ChatCompletionMessage{
 			{
 				Role:    openai.ChatMessageRoleUser,
