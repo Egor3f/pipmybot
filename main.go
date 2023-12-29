@@ -95,8 +95,45 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 		if cfg.Debug || rand.Int()%20 == 0 {
 			sendFunnyReply(ctx, ai)
 		}
+
+		explainWord := []string{
+			"обьясни", "объясни",
+			"что за слово", "что это",
+			"не понял",
+			"че", "чё",
+		}
+		if ctx.Message().ThreadID == 0 && ctx.Message().ReplyTo != nil && stringContains(ctx.Message().Text, explainWord) {
+			replyToText := ctx.Message().ReplyTo.Text
+			replyToText = strings.TrimSpace(replyToText)
+			if strings.Count(replyToText, " ") == 0 {
+				sendExplainWord(ctx, ai, replyToText)
+			}
+		}
 		return nil
 	})
+}
+
+func sendExplainWord(ctx tele.Context, ai *openai.Client, word string) {
+	propmt := fmt.Sprintf("Обьясни значение слова %s", word)
+	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
+		Model: openai.GPT3Dot5Turbo1106,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: propmt,
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("openai error: %v", err)
+		return
+	}
+	answer := resp.Choices[0].Message.Content
+	log.Printf("gpt answer: %v", answer)
+	err = ctx.Reply(answer)
+	if err != nil {
+		log.Printf("reply error: %v", err)
+	}
 }
 
 func sendFunnyReply(ctx tele.Context, ai *openai.Client) {
@@ -125,6 +162,7 @@ func sendFunnyReply(ctx tele.Context, ai *openai.Client) {
 	})
 	if err != nil {
 		log.Printf("openai error: %v", err)
+		return
 	}
 	answer := resp.Choices[0].Message.Content
 	log.Printf("gpt answer: %v", answer)
