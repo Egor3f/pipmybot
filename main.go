@@ -101,7 +101,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			"обьясни", "объясни",
 			"что за слово", "что это",
 			"не понял",
-			"че", "чё",
+			"че", "чё", "что",
 		}
 		if ctx.Message().IsReply() && stringContains(ctx.Message().Text, explainWord) {
 			log.Println("what???")
