@@ -103,7 +103,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			"не понял",
 			"че", "чё", "что",
 		}
-		if ctx.Message().IsReply() && stringContains(ctx.Message().Text, explainWord) {
+		if ctx.Message().IsReply() && stringStartsWith(ctx.Message().Text, explainWord) {
 			log.Println("what???")
 			replyToText := ctx.Message().ReplyTo.Text
 			replyToText = strings.TrimSpace(replyToText)

@@ -2,7 +2,7 @@ package main
 
 import "strings"
 
-func stringContains(source string, check []string) bool {
+func stringStartsWith(source string, check []string) bool {
 	source = strings.ToLower(source)
 	for _, st := range check {
 		if strings.HasPrefix(source, st) {
