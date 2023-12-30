@@ -92,6 +92,10 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	})
 
 	bot.Handle(tele.OnText, func(ctx tele.Context) error {
+		if cfg.Debug {
+			log.Printf("is reply=%v", ctx.Message().IsReply())
+		}
+
 		/*if cfg.Debug || rand.Int()%20 == 0 {
 			log.Println("язвим...")
 			sendFunnyReply(ctx, ai)
@@ -107,7 +111,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			log.Println("what???")
 			replyToText := ctx.Message().ReplyTo.Text
 			replyToText = strings.TrimSpace(replyToText)
-			if strings.Count(replyToText, " ") == 0 {
+			if len(replyToText) > 0 && strings.Count(replyToText, " ") == 0 {
 				sendExplainWord(ctx, ai, replyToText)
 			}
 		}
