@@ -132,7 +132,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 }
 
 func summary(cfg Config, ctx tele.Context, ai *openai.Client, postLink string) {
-	title := fmt.Sprintf("  ChatGPT: Краткое содержание поста %s\n\n", postLink)
+	title := fmt.Sprintf("ChatGPT: Краткое содержание поста %s\n\n", postLink)
 	msg, err := ctx.Bot().Reply(ctx.Message(), fmt.Sprintf("%sЗагружаем пост... ", title), tele.NoPreview)
 	if err != nil {
 		log.Printf("reply error: %v", err)
@@ -164,7 +164,7 @@ func summary(cfg Config, ctx tele.Context, ai *openai.Client, postLink string) {
 		return
 	}
 
-	sentenciesEstimate := float64(utf8.RuneCountInString(postContent)) / 200 // magic hardcoded constant, yep, shitcode
+	sentenciesEstimate := float64(utf8.RuneCountInString(postContent)) / 300 // magic hardcoded constant, yep, shitcode
 	log.Printf("len=%d, estimate=%f", utf8.RuneCountInString(postContent), sentenciesEstimate)
 	propmt := fmt.Sprintf(
 		"Я пришлю тебе пост, а тебе нужно будет составить краткое содержание. Длина %d-%d предложений. "+
