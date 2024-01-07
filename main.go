@@ -3,17 +3,21 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/gocolly/colly/v2"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
 	tele "gopkg.in/telebot.v3"
 	"gopkg.in/telebot.v3/middleware"
 	"log"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
+	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -95,6 +99,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 		if cfg.Debug {
 			log.Printf("is reply=%v", ctx.Message().IsReply())
 		}
+		lowerText := strings.TrimSpace(strings.ToLower(ctx.Message().Text))
 
 		/*if cfg.Debug || rand.Int()%20 == 0 {
 			log.Println("язвим...")
@@ -115,8 +120,110 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 				sendExplainWord(ctx, ai, replyToText)
 			}
 		}
+
+		postLinkRegex := regexp.MustCompile(`https://pipmy\.ru/.+?\.html`)
+		postLinkFound := postLinkRegex.FindString(lowerText)
+		if len(postLinkFound) > 0 {
+			summary(cfg, ctx, ai, postLinkFound)
+		}
+
 		return nil
 	})
+}
+
+func summary(cfg Config, ctx tele.Context, ai *openai.Client, postLink string) {
+	title := fmt.Sprintf("  ChatGPT: Краткое содержание поста %s\n\n", postLink)
+	msg, err := ctx.Bot().Reply(ctx.Message(), fmt.Sprintf("%sЗагружаем пост... ", title), tele.NoPreview)
+	if err != nil {
+		log.Printf("reply error: %v", err)
+		return
+	}
+
+	postContent, err := parsePost(cfg, postLink)
+	if err != nil {
+		log.Printf("error parsing post: %v", err)
+		return
+	}
+
+	if len(postContent) == 0 {
+		log.Println("post length=0")
+		_, err = ctx.Bot().Edit(
+			msg,
+			fmt.Sprintf("%sПост содержит только картинки или пустой. Краткое содержание недоступно", title),
+			tele.NoPreview,
+		)
+		if err != nil {
+			log.Printf("edit error: %v", err)
+		}
+		return
+	}
+
+	msg, err = ctx.Bot().Edit(msg, fmt.Sprintf("%sПост загружен, генерируем описание через GPT...", title), tele.NoPreview)
+	if err != nil {
+		log.Printf("edit error: %v", err)
+		return
+	}
+
+	sentenciesEstimate := float64(utf8.RuneCountInString(postContent)) / 200 // magic hardcoded constant, yep, shitcode
+	log.Printf("len=%d, estimate=%f", utf8.RuneCountInString(postContent), sentenciesEstimate)
+	propmt := fmt.Sprintf(
+		"Я пришлю тебе пост, а тебе нужно будет составить краткое содержание. Длина %d-%d предложений. "+
+			"\n%s", int(math.Floor(sentenciesEstimate)), int(math.Ceil(sentenciesEstimate)+1), postContent)
+	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
+		Model: openai.GPT4TurboPreview,
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: propmt,
+			},
+		},
+	})
+	if err != nil {
+		log.Printf("openai error: %v", err)
+		return
+	}
+	answer := resp.Choices[0].Message.Content
+	log.Printf("gpt answer: %v", answer)
+
+	_, err = ctx.Bot().Edit(msg, fmt.Sprintf("%s%s", title, answer), tele.NoPreview)
+	if err != nil {
+		log.Printf("edit error: %v", err)
+		return
+	}
+}
+
+func parsePost(cfg Config, link string) (result string, err error) {
+	col := colly.NewCollector()
+	col.Limit(&colly.LimitRule{
+		Delay:       1 * time.Second,
+		Parallelism: 1,
+	})
+	col.OnError(func(resp *colly.Response, err2 error) {
+		err = fmt.Errorf("scraper error: %w", err2)
+	})
+	col.OnHTML("div.item-content", func(e *colly.HTMLElement) {
+		result = e.Text
+		if cfg.Debug {
+			log.Println(result)
+		}
+		result = strings.ReplaceAll(result, "replaceImgClass()", "")
+		result = strings.TrimSpace(result)
+		/*
+			p := post{}
+			p.text = e.Text
+			e.ForEach("img[src]", func(i int, e *colly.HTMLElement) {
+				img := postImage{url: e.Attr("src")}
+				if !strings.HasPrefix(img.url, "http") {
+					img.url = "https:// " + e.Request.URL.Host + img.url
+				}
+				p.images = append(p.images, img)
+			})
+			posts = append(posts, p)
+		*/
+	})
+	col.Visit(link)
+	col.Wait()
+	return
 }
 
 func sendExplainWord(ctx tele.Context, ai *openai.Client, word string) {
