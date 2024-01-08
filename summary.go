@@ -90,7 +90,7 @@ func summary(cfg Config, ctx telebot.Context, ai *openai.Client, postLink string
 				MultiContent: multiContent,
 			},
 		},
-		MaxTokens: 300,
+		MaxTokens: 500,
 	})
 	if err != nil {
 		log.Printf("openai error: %v", err)
