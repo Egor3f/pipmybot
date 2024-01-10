@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -98,6 +99,17 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 		}
 		lowerText := strings.TrimSpace(strings.ToLower(ctx.Message().Text))
 
+		tempRegex := regexp.MustCompile(`temp (\d\.\d)`)
+		tempFound := tempRegex.FindStringSubmatch(lowerText)
+		temperature := float32(1.0)
+		if tempFound != nil {
+			parsedTemp, err := strconv.ParseFloat(tempFound[1], 32)
+			if err == nil {
+				temperature = float32(parsedTemp)
+				log.Printf("temperature set to %f", temperature)
+			}
+		}
+
 		/*if cfg.Debug || rand.Int()%20 == 0 {
 			log.Println("язвим...")
 			sendFunnyReply(ctx, ai)
@@ -114,21 +126,21 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			replyToText := ctx.Message().ReplyTo.Text
 			replyToText = strings.TrimSpace(replyToText)
 			if len(replyToText) > 0 && strings.Count(replyToText, " ") == 0 {
-				sendExplainWord(ctx, ai, replyToText)
+				sendExplainWord(ctx, ai, replyToText, temperature)
 			}
 		}
 
 		postLinkRegex := regexp.MustCompile(`https://pipmy\.ru/.+?\.html`)
 		postLinkFound := postLinkRegex.FindString(lowerText)
 		if len(postLinkFound) > 0 {
-			summary(cfg, ctx, ai, postLinkFound)
+			summary(cfg, ctx, ai, postLinkFound, temperature)
 		}
 
 		return nil
 	})
 }
 
-func sendExplainWord(ctx tele.Context, ai *openai.Client, word string) {
+func sendExplainWord(ctx tele.Context, ai *openai.Client, word string, temperature float32) {
 	propmt := fmt.Sprintf("Обьясни значение слова %s", word)
 	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
 		Model: openai.GPT3Dot5Turbo1106,
@@ -138,6 +150,7 @@ func sendExplainWord(ctx tele.Context, ai *openai.Client, word string) {
 				Content: propmt,
 			},
 		},
+		Temperature: temperature,
 	})
 	if err != nil {
 		log.Printf("openai error: %v", err)

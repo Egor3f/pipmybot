@@ -23,7 +23,7 @@ type postPart struct {
 	content string
 }
 
-func summary(cfg Config, ctx telebot.Context, ai *openai.Client, postLink string) {
+func summary(cfg Config, ctx telebot.Context, ai *openai.Client, postLink string, temperature float32) {
 	title := fmt.Sprintf("ChatGPT: Краткое содержание поста %s\n\n", postLink)
 	msg, err := ctx.Bot().Reply(ctx.Message(), fmt.Sprintf("%sЗагружаем пост... ", title), telebot.NoPreview)
 	if err != nil {
@@ -90,7 +90,8 @@ func summary(cfg Config, ctx telebot.Context, ai *openai.Client, postLink string
 				MultiContent: multiContent,
 			},
 		},
-		MaxTokens: 500,
+		MaxTokens:   500,
+		Temperature: temperature,
 	})
 	if err != nil {
 		log.Printf("openai error: %v", err)
