@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/redis/go-redis/v9"
@@ -9,14 +8,12 @@ import (
 	tele "gopkg.in/telebot.v3"
 	"gopkg.in/telebot.v3/middleware"
 	"log"
-	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
-	"unicode/utf8"
 )
 
 type Config struct {
@@ -138,64 +135,4 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 
 		return nil
 	})
-}
-
-func sendExplainWord(ctx tele.Context, ai *openai.Client, word string, temperature float32) {
-	propmt := fmt.Sprintf("Обьясни значение слова %s", word)
-	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model: openai.GPT3Dot5Turbo1106,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: propmt,
-			},
-		},
-		Temperature: temperature,
-	})
-	if err != nil {
-		log.Printf("openai error: %v", err)
-		return
-	}
-	answer := resp.Choices[0].Message.Content
-	log.Printf("gpt answer: %v", answer)
-	err = ctx.Reply(answer)
-	if err != nil {
-		log.Printf("reply error: %v", err)
-	}
-}
-
-func sendFunnyReply(ctx tele.Context, ai *openai.Client) {
-	text := ctx.Message().Text
-	text = strings.TrimSpace(text)
-	if utf8.RuneCountInString(text) < 10 || utf8.RuneCountInString(text) > 300 {
-		return
-	}
-	const preprompt = "Ты шутливый чат бот, добавленный в группу. Ты должен язвительно комментировать сообщения. Отвечай коротко"
-	model := openai.GPT3Dot5Turbo1106
-	if rand.Int()%2 == 0 {
-		model = openai.GPT4TurboPreview
-	}
-	resp, err := ai.CreateChatCompletion(context.TODO(), openai.ChatCompletionRequest{
-		Model: model,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: preprompt,
-			},
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: text,
-			},
-		},
-	})
-	if err != nil {
-		log.Printf("openai error: %v", err)
-		return
-	}
-	answer := resp.Choices[0].Message.Content
-	log.Printf("gpt answer: %v", answer)
-	err = ctx.Reply(answer)
-	if err != nil {
-		log.Printf("reply error: %v", err)
-	}
 }
