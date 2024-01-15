@@ -18,15 +18,15 @@ import (
 )
 
 type Config struct {
-	TelegramToken    string  `env:"TELEGRAM_TOKEN" env-required:"true"`
-	OpenAIToken      string  `env:"OPENAI_TOKEN" env-required:"true"`
-	OpenAIProxy      string  `env:"OPENAI_PROXY" env-required:"true"`
-	ChatsWhitelist   []int64 `env:"CHATS_WHITELIST"`
-	Redis            string  `env:"REDIS" env-required:"true"`
-	NewPostsChatId   int64   `env:"NEW_POSTS_CHAT_ID" env-required:"true"`
-	NewPostsThreadId int     `env:"NEW_POSTS_THREAD_ID" env-required:"true"`
-	NewPostsFeedURL  string  `env:"NEW_POSTS_FEED_URL" env-required:"true"`
-	Debug            bool    `env:"DEBUG"`
+	TelegramToken     string  `env:"TELEGRAM_TOKEN" env-required:"true"`
+	OpenAIToken       string  `env:"OPENAI_TOKEN" env-required:"true"`
+	OpenAIProxy       string  `env:"OPENAI_PROXY" env-required:"true"`
+	ChatsWhitelist    []int64 `env:"CHATS_WHITELIST"`
+	Redis             string  `env:"REDIS" env-required:"true"`
+	NewPostsChatId    int64   `env:"NEW_POSTS_CHAT_ID" env-required:"true"`
+	NewPostsThreadIds []int   `env:"NEW_POSTS_THREAD_IDS" env-required:"true"`
+	NewPostsFeedURL   string  `env:"NEW_POSTS_FEED_URL" env-required:"true"`
+	Debug             bool    `env:"DEBUG"`
 }
 
 func main() {

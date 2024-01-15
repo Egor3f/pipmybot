@@ -42,9 +42,11 @@ func notifyNewPosts(cfg Config, bot *tele.Bot, rediska *redis.Client) (err error
 		}
 		if !dryRun {
 			message := fmt.Sprintf("Новый пост на pipmy! %s", item.Link)
-			_, err = bot.Send(tele.ChatID(cfg.NewPostsChatId), message, &tele.SendOptions{ThreadID: cfg.NewPostsThreadId})
-			if err != nil {
-				return fmt.Errorf("send error: %w", err)
+			for _, threadId := range cfg.NewPostsThreadIds {
+				_, err = bot.Send(tele.ChatID(cfg.NewPostsChatId), message, &tele.SendOptions{ThreadID: threadId})
+				if err != nil {
+					return fmt.Errorf("send error: %w", err)
+				}
 			}
 		}
 		if rediska.SAdd(context.TODO(), redisSentIdsKey, item.GUID).Err() != nil {
