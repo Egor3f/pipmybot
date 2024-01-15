@@ -14,15 +14,19 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Config struct {
-	TelegramToken  string  `env:"TELEGRAM_TOKEN" env-required:"true"`
-	OpenAIToken    string  `env:"OPENAI_TOKEN" env-required:"true"`
-	OpenAIProxy    string  `env:"OPENAI_PROXY" env-required:"true"`
-	ChatsWhitelist []int64 `env:"CHATS_WHITELIST"`
-	Redis          string  `env:"REDIS" env-required:"true"`
-	Debug          bool    `env:"DEBUG"`
+	TelegramToken    string  `env:"TELEGRAM_TOKEN" env-required:"true"`
+	OpenAIToken      string  `env:"OPENAI_TOKEN" env-required:"true"`
+	OpenAIProxy      string  `env:"OPENAI_PROXY" env-required:"true"`
+	ChatsWhitelist   []int64 `env:"CHATS_WHITELIST"`
+	Redis            string  `env:"REDIS" env-required:"true"`
+	NewPostsChatId   int64   `env:"NEW_POSTS_CHAT_ID" env-required:"true"`
+	NewPostsThreadId int     `env:"NEW_POSTS_THREAD_ID" env-required:"true"`
+	NewPostsFeedURL  string  `env:"NEW_POSTS_FEED_URL" env-required:"true"`
+	Debug            bool    `env:"DEBUG"`
 }
 
 func main() {
@@ -31,6 +35,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Printf("Config: %v", cfg)
 
 	bot, err := tele.NewBot(tele.Settings{
 		Token: cfg.TelegramToken,
@@ -56,6 +61,18 @@ func main() {
 
 	setupMiddlewares(cfg, bot)
 	setupHandlers(cfg, bot, ai, rediska)
+
+	go func() {
+		for {
+			log.Println("checking new posts...")
+			err := notifyNewPosts(cfg, bot, rediska)
+			if err != nil {
+				log.Printf("Error notify new posts: %v", err)
+			}
+			time.Sleep(1 * time.Minute)
+		}
+	}()
+
 	bot.Start()
 }
 
@@ -91,6 +108,10 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	})
 
 	bot.Handle(tele.OnText, func(ctx tele.Context) error {
+		if ctx.Message().Sender.IsBot {
+			return nil
+		}
+
 		if cfg.Debug {
 			log.Printf("is reply=%v", ctx.Message().IsReply())
 		}
