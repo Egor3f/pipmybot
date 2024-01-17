@@ -13,7 +13,7 @@ services:
       - CHATS_WHITELIST=$CHATS_WHITELIST
       - REDIS=redis:6379
       - NEW_POSTS_CHAT_ID=-1001989824148
-      - NEW_POSTS_THREAD_IDS=36,46567
+      - NEW_POSTS_THREAD_IDS=46567
       - NEW_POSTS_FEED_URL=https://pipmy.ru/rss/feed/posts
   redis:
     image: redis
