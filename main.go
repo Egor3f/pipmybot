@@ -128,11 +128,6 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			}
 		}
 
-		/*if cfg.Debug || rand.Int()%20 == 0 {
-			log.Println("язвим...")
-			sendFunnyReply(ctx, ai)
-		}*/
-
 		explainWord := []string{
 			"обьясни", "объясни",
 			"что за слово", "что это",
@@ -152,6 +147,15 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 		postLinkFound := postLinkRegex.FindString(lowerText)
 		if len(postLinkFound) > 0 {
 			summary(cfg, ctx, ai, postLinkFound, temperature)
+		}
+
+		const anyQuestionPrefix = "пип бот"
+		if strings.HasPrefix(lowerText, anyQuestionPrefix) {
+			prompt, _ := strings.CutPrefix(lowerText, anyQuestionPrefix)
+			prompt = strings.TrimSpace(prompt)
+			if len(prompt) > 0 {
+				anyQuestion(ctx, ai, prompt)
+			}
 		}
 
 		return nil
