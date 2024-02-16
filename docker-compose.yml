@@ -13,12 +13,16 @@ services:
       - CHATS_WHITELIST=$CHATS_WHITELIST
       - NOVOFON_KEY=$NOVOFON_KEY
       - NOVOFON_SECRET=$NOVOFON_SECRET
+      - TELEGRAM_APP_ID=$TELEGRAM_APP_ID
+      - TELEGRAM_APP_HASH=$TELEGRAM_APP_HASH
       - REDIS=redis:6379
       - NEW_POSTS_CHAT_ID=-1001989824148
       - NEW_POSTS_THREAD_IDS=46567
       - NEW_POSTS_FEED_URL=https://pipmy.ru/rss/feed/posts
       - NOVOFON_FROM=333747
       - TOAD_BOT_ID=1124824021
+    volumes:
+      - /app/session.json:/home/user/session.json
   redis:
     image: redis
     restart: unless-stopped

@@ -21,6 +21,8 @@ jobs:
           CHATS_WHITELIST: ${{ secrets.CHATS_WHITELIST }}
           NOVOFON_KEY: ${{ secrets.NOVOFON_KEY }}
           NOVOFON_SECRET: ${{ secrets.NOVOFON_SECRET }}
+          TELEGRAM_APP_ID: ${{ TELEGRAM_APP_ID }}
+          TELEGRAM_APP_HASH: ${{ TELEGRAM_APP_HASH }}
         with:
           host: ${{ secrets.DOCKER_SSH_HOST }}
           port: ${{ secrets.DOCKER_SSH_PORT }}

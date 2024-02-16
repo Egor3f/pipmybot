@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gotd/td/tg"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
@@ -31,6 +32,10 @@ type Config struct {
 	NovofonSecret     string  `env:"NOVOFON_SECRET" env-required:"true"`
 	NovofonFrom       string  `env:"NOVOFON_FROM" env-required:"true"`
 	Debug             bool    `env:"DEBUG"`
+	TelegramClient    struct {
+		AppId   int    `env:"TELEGRAM_APP_ID" env-required:"true"`
+		AppHash string `env:"TELEGRAM_APP_HASH" env-required:"true"`
+	}
 }
 
 func main() {
@@ -77,6 +82,29 @@ func main() {
 		}
 	}()
 
+	go func() {
+		monitorBotMessages(cfg, func(update *tg.UpdateNewChannelMessage) {
+			msg, ok := update.Message.(*tg.Message)
+			if !ok {
+				return
+			}
+			peer, ok := msg.FromID.(*tg.PeerUser)
+			if !ok {
+				return
+			}
+			//log.Printf("Peer: %+v", peer)
+			//log.Printf("Mesg: %+v", msg)
+			if peer.UserID != cfg.ToadBotId || !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
+				return
+			}
+			mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
+			if !ok {
+				return
+			}
+			notifyToadCafe(cfg, rediska, mention.UserID)
+		})
+	}()
+
 	bot.Start()
 }
 
@@ -116,13 +144,6 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			log.Printf("is reply=%v", ctx.Message().IsReply())
 		}
 		lowerText := strings.TrimSpace(strings.ToLower(ctx.Message().Text))
-
-		if ctx.Message().Sender.ID == cfg.ToadBotId || cfg.Debug {
-			toadCafeSubstr := "новый заказ! на выполнение у вас есть"
-			if strings.Contains(lowerText, toadCafeSubstr) {
-				notifyToadCafe(cfg, ctx, rediska)
-			}
-		}
 
 		if ctx.Message().Sender.IsBot {
 			return nil

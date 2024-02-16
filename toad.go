@@ -112,17 +112,7 @@ func welcomeToadNotify(ctx telebot.Context, rediska *redis.Client) {
 	}
 }
 
-func notifyToadCafe(cfg Config, ctx telebot.Context, rediska *redis.Client) {
-	if len(ctx.Message().Entities) == 0 {
-		log.Printf("No entities in toadbot message!")
-		return
-	}
-	if ctx.Message().Entities[0].Type != telebot.EntityTMention {
-		log.Printf("Entity 0 is of type " + string(ctx.Message().Entities[0].Type))
-		return
-	}
-	userId := ctx.Message().Entities[0].User.ID
-
+func notifyToadCafe(cfg Config, rediska *redis.Client, userId int64) {
 	isEnabled, err := checkToadNotifyEnabled(rediska, userId)
 	if err != nil {
 		log.Printf("Notify: check if enabled error: %v", err)
