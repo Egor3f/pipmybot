@@ -28,7 +28,7 @@ jobs:
           port: ${{ secrets.DOCKER_SSH_PORT }}
           username: deployer
           key: ${{ secrets.DOCKER_SSH_PRIVATE_KEY }}
-          envs: TELEGRAM_TOKEN,OPENAI_TOKEN,OPENAI_PROXY,CHATS_WHITELIST
+          envs: TELEGRAM_TOKEN,OPENAI_TOKEN,OPENAI_PROXY,CHATS_WHITELIST,NOVOFON_KEY,NOVOFON_SECRET,TELEGRAM_APP_ID,TELEGRAM_APP_HASH
           script: |
             cd /home/deployer/pipmy_bot
             docker-compose up -d --build
