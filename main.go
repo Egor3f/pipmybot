@@ -26,6 +26,10 @@ type Config struct {
 	NewPostsChatId    int64   `env:"NEW_POSTS_CHAT_ID" env-required:"true"`
 	NewPostsThreadIds []int   `env:"NEW_POSTS_THREAD_IDS" env-required:"true"`
 	NewPostsFeedURL   string  `env:"NEW_POSTS_FEED_URL" env-required:"true"`
+	ToadBotId         int64   `env:"TOAD_BOT_ID" env-required:"true"`
+	NovofonKey        string  `env:"NOVOFON_KEY" env-required:"true"`
+	NovofonSecret     string  `env:"NOVOFON_SECRET" env-required:"true"`
+	NovofonFrom       string  `env:"NOVOFON_FROM" env-required:"true"`
 	Debug             bool    `env:"DEBUG"`
 }
 
@@ -35,7 +39,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	log.Printf("Config: %v", cfg)
+	log.Printf("Config: %+v", cfg)
 
 	bot, err := tele.NewBot(tele.Settings{
 		Token: cfg.TelegramToken,
@@ -108,14 +112,21 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	})
 
 	bot.Handle(tele.OnText, func(ctx tele.Context) error {
-		if ctx.Message().Sender.IsBot {
-			return nil
-		}
-
 		if cfg.Debug {
 			log.Printf("is reply=%v", ctx.Message().IsReply())
 		}
 		lowerText := strings.TrimSpace(strings.ToLower(ctx.Message().Text))
+
+		if ctx.Message().Sender.ID == cfg.ToadBotId || cfg.Debug {
+			toadCafeSubstr := "новый заказ! на выполнение у вас есть"
+			if strings.Contains(lowerText, toadCafeSubstr) {
+				notifyToadCafe(cfg, ctx, rediska)
+			}
+		}
+
+		if ctx.Message().Sender.IsBot {
+			return nil
+		}
 
 		tempRegex := regexp.MustCompile(`temp (\d\.\d)`)
 		tempFound := tempRegex.FindStringSubmatch(lowerText)
@@ -158,6 +169,19 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 			}
 		}
 
+		return nil
+	})
+
+	bot.Handle("/toad_notify_start", func(ctx tele.Context) error {
+		toggleToadNotufy(ctx, rediska, true)
+		return nil
+	})
+	bot.Handle("/toad_notify_stop", func(ctx tele.Context) error {
+		toggleToadNotufy(ctx, rediska, false)
+		return nil
+	})
+	bot.Handle(tele.OnContact, func(ctx tele.Context) error {
+		saveToadPhone(ctx, rediska)
 		return nil
 	})
 }
