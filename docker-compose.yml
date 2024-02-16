@@ -22,7 +22,7 @@ services:
       - NOVOFON_FROM=333747
       - TOAD_BOT_ID=1124824021
     volumes:
-      - /app/session.json:/home/user/session.json
+      - /home/user/session.json:/app/session.json
   redis:
     image: redis
     restart: unless-stopped
