@@ -19,6 +19,8 @@ jobs:
           OPENAI_TOKEN: ${{ secrets.OPENAI_TOKEN }}
           OPENAI_PROXY: ${{ secrets.OPENAI_PROXY }}
           CHATS_WHITELIST: ${{ secrets.CHATS_WHITELIST }}
+          NOVOFON_KEY: ${{ secrets.NOVOFON_KEY }}
+          NOVOFON_SECRET: ${{ secrets.NOVOFON_SECRET }}
         with:
           host: ${{ secrets.DOCKER_SSH_HOST }}
           port: ${{ secrets.DOCKER_SSH_PORT }}
