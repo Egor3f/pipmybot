@@ -115,9 +115,18 @@ func main() {
 }
 
 func setupMiddlewares(cfg Config, bot *tele.Bot) {
-	bot.Use(restrictChats(cfg.ChatsWhitelist))
+	//bot.Use(restrictChats(cfg.ChatsWhitelist))
 	if cfg.Debug {
 		bot.Use(middleware.Logger())
+	} else {
+		bot.Use(liteLogger)
+	}
+}
+
+func liteLogger(next tele.HandlerFunc) tele.HandlerFunc {
+	return func(ctx tele.Context) error {
+		log.Printf("Received bot message: User=%d Chat=%d Msg=%s", ctx.Message().Sender.ID, ctx.Message().Chat.ID, ctx.Message().Text)
+		return next(ctx)
 	}
 }
 
