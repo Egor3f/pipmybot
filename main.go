@@ -94,13 +94,19 @@ func main() {
 			}
 			//log.Printf("Peer: %+v", peer)
 			//log.Printf("Mesg: %+v", msg)
-			if peer.UserID != cfg.ToadBotId || !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
+			if peer.UserID != cfg.ToadBotId {
+				return
+			}
+			log.Printf("Toad bot message: %s", msg.Message)
+			log.Printf("Toad bot entities: %s", msg.Entities)
+			if !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
 				return
 			}
 			mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
 			if !ok {
 				return
 			}
+			log.Printf("Toad cafe: user mentioned: %d", mention.UserID)
 			notifyToadCafe(cfg, rediska, mention.UserID)
 		})
 	}()
