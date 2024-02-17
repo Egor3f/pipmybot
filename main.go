@@ -116,7 +116,9 @@ func main() {
 
 func setupMiddlewares(cfg Config, bot *tele.Bot) {
 	bot.Use(restrictChats(cfg.ChatsWhitelist))
-	bot.Use(middleware.Logger())
+	if cfg.Debug {
+		bot.Use(middleware.Logger())
+	}
 }
 
 func restrictChats(whitelist []int64) tele.MiddlewareFunc {
