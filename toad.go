@@ -18,7 +18,7 @@ import (
 )
 
 func toggleToadNotufy(ctx telebot.Context, rediska *redis.Client, isEnabled bool) {
-	err := toggleToadNotify(ctx, rediska, isEnabled)
+	err := saveStateToadNotify(ctx, rediska, isEnabled)
 	if err != nil {
 		log.Printf("Toggle noad notify error: %v", err)
 		return
@@ -83,7 +83,7 @@ func saveToadPhone(ctx telebot.Context, rediska *redis.Client) {
 		return
 	}
 	err = ctx.Reply(
-		"Номер телефона сохранён. ВАЖНО! Не забудьте удалить сообщение с ним, в противном случае вам наприсылают некрасивых дикпиков.",
+		"Номер телефона сохранён.",
 		telebot.RemoveKeyboard,
 	)
 	if err != nil {
@@ -195,7 +195,7 @@ func checkToadNotifyEnabled(rediska *redis.Client, userId int64) (bool, error) {
 	return isEnabled, nil
 }
 
-func toggleToadNotify(ctx telebot.Context, rediska *redis.Client, isEnabled bool) error {
+func saveStateToadNotify(ctx telebot.Context, rediska *redis.Client, isEnabled bool) error {
 	isEnabledKey := fmt.Sprintf("toad_notify_enabled_%d", ctx.Message().Sender.ID)
 	err := rediska.Set(context.TODO(), isEnabledKey, isEnabled, 0).Err()
 	if err != nil {
