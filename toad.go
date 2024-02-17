@@ -63,7 +63,7 @@ func saveToadPhone(ctx telebot.Context, rediska *redis.Client) {
 	phone := ctx.Message().Contact.PhoneNumber
 
 	// Validation
-	phoneRegex := regexp.MustCompile(`7\d{10}`)
+	phoneRegex := regexp.MustCompile(`\d{10,12}`)
 	if !phoneRegex.MatchString(phone) {
 		log.Printf("Wrong number: %v", phone)
 		err := ctx.Reply(
