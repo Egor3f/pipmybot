@@ -147,7 +147,7 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 
 		if ctx.Message().Sticker.UniqueID == fuckSummer {
 			log.Println("нахуй лету")
-			replyFuckSummer(ctx, rediska)
+			// replyFuckSummer(ctx, rediska)
 			if checkCalmDownFuckSummer(ctx, rediska, ai) {
 				sendCalmDownFuckSummer(ctx, rediska, ai)
 			}

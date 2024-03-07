@@ -30,7 +30,7 @@ func replyFuckSummer(ctx telebot.Context, rediska *redis.Client) {
 
 func checkCalmDownFuckSummer(ctx telebot.Context, rediska *redis.Client, ai *openai.Client) (toCalmDown bool) {
 	const userTimeout = 2 * time.Minute
-	const userRateWithinTimeout = 5
+	const userRateWithinTimeout = 2
 
 	userLimitKey := fmt.Sprintf("fuckSummerCount_%d", ctx.Message().Sender.ID)
 	incrRes, err := rediska.Incr(context.TODO(), userLimitKey).Result()
