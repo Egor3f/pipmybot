@@ -109,7 +109,7 @@ func sendWelcome(ctx tele.Context) {
 }
 
 func sendTopics(ctx tele.Context) {
-	err := ctx.Reply(topicsText)
+	err := ctx.Reply(topicsText, tele.ModeMarkdown)
 	if err != nil {
 		log.Printf("Topics reply error: %v", err)
 		return
