@@ -222,4 +222,6 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 		saveToadPhone(ctx, rediska)
 		return nil
 	})
+
+	handleWelcome(bot)
 }
