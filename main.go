@@ -82,7 +82,7 @@ func main() {
 		}
 	}()
 
-	/*go func() {
+	go func() {
 		monitorBotMessages(cfg, func(update *tg.UpdateNewChannelMessage) {
 			msg, ok := update.Message.(*tg.Message)
 			if !ok {
@@ -92,32 +92,26 @@ func main() {
 			if !ok {
 				return
 			}
-			log.Printf("Peer: %+v", peer)
-			log.Printf("Mesg: %+v", msg)
-			if peer.UserID == cfg.ToadBotId {
-				processToadBotMessage(msg, cfg, rediska)
-			} else {
-				a := 1
-				_ = a
+			//log.Printf("Peer: %+v", peer)
+			//log.Printf("Mesg: %+v", msg)
+			if peer.UserID != cfg.ToadBotId {
+				return
 			}
+			log.Printf("Toad bot message: %s", msg.Message)
+			log.Printf("Toad bot entities: %s", msg.Entities)
+			if !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
+				return
+			}
+			mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
+			if !ok {
+				return
+			}
+			log.Printf("Toad cafe: user mentioned: %d", mention.UserID)
+			notifyToadCafe(cfg, rediska, mention.UserID)
 		})
-	}()*/
+	}()
 
 	bot.Start()
-}
-
-func processToadBotMessage(msg *tg.Message, cfg Config, rediska *redis.Client) {
-	log.Printf("Toad bot message: %s", msg.Message)
-	log.Printf("Toad bot entities: %s", msg.Entities)
-	if !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
-		return
-	}
-	mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
-	if !ok {
-		return
-	}
-	log.Printf("Toad cafe: user mentioned: %d", mention.UserID)
-	notifyToadCafe(cfg, rediska, mention.UserID)
 }
 
 func setupMiddlewares(cfg Config, bot *tele.Bot) {
