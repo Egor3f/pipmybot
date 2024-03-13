@@ -32,21 +32,52 @@ func init() {
 }
 
 func handleAntispam(bot *tele.Bot, cfg Config, rediska *redis.Client) {
+	checkPermission := func(ctx tele.Context) bool {
+		if !slices.Contains(cfg.AdminIds, ctx.Message().Sender.ID) {
+			if err := ctx.Reply("Редактировать параметры антиспама могут только определённые пользователи"); err != nil {
+				log.Printf("Reply error: %v", err)
+			}
+			return false
+		}
+		return true
+	}
+
 	bot.Handle("/antispam", func(ctx tele.Context) error {
-		args := strings.TrimSpace(strings.Replace(ctx.Message().Text, "/antispam", "", -1))
+		args := strings.TrimSpace(strings.Replace(ctx.Message().Text, "/antispam", "", 1))
 		if len(args) == 0 {
 			printAntispamRules(ctx, rediska)
 		} else {
-			if !slices.Contains(cfg.AdminIds, ctx.Message().Sender.ID) {
-				if err := ctx.Reply("Редактировать параметры антиспама могут только определённые пользователи"); err != nil {
-					log.Printf("Reply error: %v", err)
-				}
-				return nil
+			if checkPermission(ctx) {
+				setAntispamRules(ctx, strings.Split(args, "\n"), rediska)
 			}
-			setAntispamRules(ctx, args, rediska)
 		}
 		return nil
 	})
+	bot.Handle("/antispam_add", func(ctx tele.Context) error {
+		args := strings.TrimSpace(strings.Replace(ctx.Message().Text, "/antispam_add", "", 1))
+		if len(args) == 0 {
+			err := ctx.Reply("Для добавления правила, используйте команду:\n/antispam_add ID_Бота Регулярное_выражение")
+			if err != nil {
+				log.Printf("Reply error: %v", err)
+			}
+			return nil
+		}
+		if checkPermission(ctx) {
+			addAntispamRule(ctx, rediska, args)
+		}
+		return nil
+	})
+}
+
+func addAntispamRule(ctx tele.Context, rediska *redis.Client, args string) {
+	rules, err := getAntispamRules(rediska)
+	if err != nil {
+		log.Printf("Adding rules: getting: %v", err)
+		return
+	}
+	rules = append(rules, strings.Split(args, "\n")...)
+	setAntispamRules(ctx, rules, rediska)
+	printAntispamRules(ctx, rediska)
 }
 
 func printAntispamRules(ctx tele.Context, rediska *redis.Client) {
@@ -64,6 +95,7 @@ func printAntispamRules(ctx tele.Context, rediska *redis.Client) {
 Для установки новых правил используйте команду /antispam, далее на каждой новой строке по правилу \(регулярные вырыжения\)\. 
 Новые правила заменяют текущие, поэтому есть смысл копировать их из данного сообщения и отредактировать\.
 Для установки правила только для определенного пользователя, в начале строки впишите число \(id бота, который можно узнать через @userinfobot\)\. Далее через пробел правило
+Для добавления правила, используйте команду: /antispam\_add ID\_Бота Регулярное\_выражение
 `, escapeMarkdownV2(rulesStr)), tele.ModeMarkdownV2)
 	if err != nil {
 		log.Printf("Reply antispam rules error: %v", err)
@@ -82,9 +114,9 @@ func getAntispamRules(rediska *redis.Client) ([]string, error) {
 	}
 }
 
-func setAntispamRules(ctx tele.Context, args string, rediska *redis.Client) {
+func setAntispamRules(ctx tele.Context, rules []string, rediska *redis.Client) {
 	rulesStr := ""
-	for _, rule := range strings.Split(args, "\n") {
+	for _, rule := range rules {
 		rule = strings.TrimSpace(rule)
 		if len(rule) == 0 {
 			continue
