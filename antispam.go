@@ -10,7 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	tele "gopkg.in/telebot.v3"
 	"log"
-	"math/rand/v2"
+	"math/rand"
 	"regexp"
 	"slices"
 	"strconv"
@@ -182,7 +182,7 @@ func checkAndRemoveSpam(cfg Config, client *telegram.Client, msg *tg.Message, re
 
 func removeMessage(cfg Config, client *telegram.Client, msg *tg.Message) {
 	go func() {
-		time.Sleep(time.Duration(rand.Int64N(5000)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Int63n(5000)) * time.Millisecond)
 		log.Printf("SPAM DETECTED! Timeout passed; performing delete...")
 		sender := message.NewSender(client.API())
 		affectedMessages, err := sender.Resolve(cfg.ChannelUsername).Revoke().Messages(context.TODO(), msg.ID)
