@@ -10,7 +10,7 @@ import (
 	"log"
 )
 
-type messageHandler func(update *tg.UpdateNewChannelMessage)
+type messageHandler func(client *telegram.Client, update *tg.UpdateNewChannelMessage)
 
 func monitorBotMessages(cfg Config, onNewMessage messageHandler) {
 	dispatcher := tg.NewUpdateDispatcher()
@@ -31,7 +31,9 @@ func monitorBotMessages(cfg Config, onNewMessage messageHandler) {
 	)
 
 	dispatcher.OnNewChannelMessage(func(ctx context.Context, e tg.Entities, update *tg.UpdateNewChannelMessage) error {
-		onNewMessage(update)
+		log.Printf("New channel message: %+v", update)
+		log.Printf("Pts=%d, PtsCount=%d", update.Pts, update.PtsCount)
+		onNewMessage(client, update)
 		return nil
 	})
 

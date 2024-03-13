@@ -11,3 +11,11 @@ func stringStartsWith(source string, check []string) bool {
 	}
 	return false
 }
+
+func escapeMarkdownV2(s string) string {
+	chars := []string{"_", "*", "[", "]", "(", ")", "~", "`", ">", "#", "+", "-", "=", "|", "{", "}", ".", "!"}
+	for _, c := range chars {
+		s = strings.Replace(s, c, `\`+c, -1)
+	}
+	return s
+}

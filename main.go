@@ -2,15 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/gotd/td/telegram"
 	"github.com/gotd/td/tg"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
 	tele "gopkg.in/telebot.v3"
-	"gopkg.in/telebot.v3/middleware"
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"regexp"
 	"slices"
 	"strconv"
@@ -36,6 +37,8 @@ type Config struct {
 		AppId   int    `env:"TELEGRAM_APP_ID" env-required:"true"`
 		AppHash string `env:"TELEGRAM_APP_HASH" env-required:"true"`
 	}
+	AdminIds        []int64 `env:"ADMIN_IDS" env-required:"true"`
+	ChannelUsername string  `env:"CHANNEL_USERNAME" env-required:"true"`
 }
 
 func main() {
@@ -71,19 +74,32 @@ func main() {
 	setupMiddlewares(cfg, bot)
 	setupHandlers(cfg, bot, ai, rediska)
 
-	go func() {
-		for {
-			log.Println("checking new posts...")
-			err := notifyNewPosts(cfg, bot, rediska)
-			if err != nil {
-				log.Printf("Error notify new posts: %v", err)
+	if !cfg.Debug {
+		go func() {
+			for {
+				log.Println("checking new posts...")
+				err := notifyNewPosts(cfg, bot, rediska)
+				if err != nil {
+					log.Printf("Error notify new posts: %v", err)
+				}
+				time.Sleep(1 * time.Minute)
 			}
-			time.Sleep(1 * time.Minute)
-		}
-	}()
+		}()
+	}
 
+	if _, err := os.Stat("session.json"); !os.IsNotExist(err) {
+		log.Printf("session.json found; starting userbot...")
+		startUserBot(cfg, rediska)
+	} else {
+		log.Printf("session.json not found; skipping userbot...")
+	}
+
+	bot.Start()
+}
+
+func startUserBot(cfg Config, rediska *redis.Client) {
 	go func() {
-		monitorBotMessages(cfg, func(update *tg.UpdateNewChannelMessage) {
+		monitorBotMessages(cfg, func(client *telegram.Client, update *tg.UpdateNewChannelMessage) {
 			msg, ok := update.Message.(*tg.Message)
 			if !ok {
 				return
@@ -94,33 +110,32 @@ func main() {
 			}
 			//log.Printf("Peer: %+v", peer)
 			//log.Printf("Mesg: %+v", msg)
-			if peer.UserID != cfg.ToadBotId {
-				return
+			if peer.UserID == cfg.ToadBotId {
+				log.Printf("Toad bot message: %s", msg.Message)
+				log.Printf("Toad bot entities: %s", msg.Entities)
+				if !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
+					return
+				}
+				mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
+				if !ok {
+					return
+				}
+				log.Printf("Toad cafe: user mentioned: %d", mention.UserID)
+				notifyToadCafe(cfg, rediska, mention.UserID)
+			} else {
+				checkAndRemoveSpam(cfg, client, msg, rediska)
 			}
-			log.Printf("Toad bot message: %s", msg.Message)
-			log.Printf("Toad bot entities: %s", msg.Entities)
-			if !strings.Contains(msg.Message, "новый заказ") || len(msg.Entities) == 0 {
-				return
-			}
-			mention, ok := msg.Entities[0].(*tg.MessageEntityMentionName)
-			if !ok {
-				return
-			}
-			log.Printf("Toad cafe: user mentioned: %d", mention.UserID)
-			notifyToadCafe(cfg, rediska, mention.UserID)
 		})
 	}()
-
-	bot.Start()
 }
 
 func setupMiddlewares(cfg Config, bot *tele.Bot) {
 	//bot.Use(restrictChats(cfg.ChatsWhitelist))
-	if cfg.Debug {
-		bot.Use(middleware.Logger())
-	} else {
-		bot.Use(liteLogger)
-	}
+	//if cfg.Debug {
+	//	bot.Use(middleware.Logger())
+	//} else {
+	bot.Use(liteLogger)
+	//}
 }
 
 func liteLogger(next tele.HandlerFunc) tele.HandlerFunc {
@@ -224,4 +239,5 @@ func setupHandlers(cfg Config, bot *tele.Bot, ai *openai.Client, rediska *redis.
 	})
 
 	handleWelcome(bot)
+	handleAntispam(bot, cfg, rediska)
 }
