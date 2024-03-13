@@ -10,10 +10,12 @@ import (
 	"github.com/redis/go-redis/v9"
 	tele "gopkg.in/telebot.v3"
 	"log"
+	"math/rand/v2"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const antispamRulesKey = "antispam_rules"
@@ -129,6 +131,10 @@ func parseRule(rule string) (ruleDefinition, error) {
 
 func checkAndRemoveSpam(cfg Config, client *telegram.Client, msg *tg.Message, rediska *redis.Client) {
 	clientId, accessHash, err := getChannelData(cfg, client)
+	if err != nil {
+		log.Printf("Error getting clientId and accessHash: %v", err)
+		return
+	}
 	_ = accessHash
 
 	channel, ok := msg.GetPeerID().(*tg.PeerChannel)
@@ -166,30 +172,34 @@ func checkAndRemoveSpam(cfg Config, client *telegram.Client, msg *tg.Message, re
 			continue
 		}
 		if rule.regex.MatchString(msg.Message) {
-			log.Printf("SPAM! Message from peer_id: %d and text: %s matches spam rule: %s; to be deleted",
+			log.Printf("SPAM DETECTED! Message from peer_id: %d and text: %s matches spam rule: %s; to be deleted",
 				user.GetUserID(), msg.Message, ruleStr)
-			if err != nil {
-				log.Printf("Error getting access hash: %v", err)
-				return
-			}
-			sender := message.NewSender(client.API())
-			affectedMessages, err := sender.Resolve(cfg.ChannelUsername).Revoke().Messages(context.TODO(), msg.ID)
-			/*
-				affectedMessages, err := client.API().ChannelsDeleteMessages(context.TO DO(), &tg.ChannelsDeleteMessagesRequest{
-					Channel: &tg.InputChannel{
-						ChannelID:  channel.GetChannelID(),
-						AccessHash: accessHash,
-					},
-					ID: []int{msg.ID},
-				})
-			*/
-			if err != nil {
-				log.Printf("Error deleting message: %v", err)
-			}
-			log.Printf("SPAM! Deleted message. pts: %d, ptsCount: %d", affectedMessages.Pts, affectedMessages.PtsCount)
+			removeMessage(cfg, client, msg)
 			break
 		}
 	}
+}
+
+func removeMessage(cfg Config, client *telegram.Client, msg *tg.Message) {
+	go func() {
+		time.Sleep(time.Duration(rand.Int64N(5000)) * time.Millisecond)
+		log.Printf("SPAM DETECTED! Timeout passed; performing delete...")
+		sender := message.NewSender(client.API())
+		affectedMessages, err := sender.Resolve(cfg.ChannelUsername).Revoke().Messages(context.TODO(), msg.ID)
+		/*
+			affectedMessages, err := client.API().ChannelsDeleteMessages(context.TO DO(), &tg.ChannelsDeleteMessagesRequest{
+				Channel: &tg.InputChannel{
+					ChannelID:  channel.GetChannelID(),
+					AccessHash: accessHash,
+				},
+				ID: []int{msg.ID},
+			})
+		*/
+		if err != nil {
+			log.Printf("SPAM DETECTED! Error deleting message: %v", err)
+		}
+		log.Printf("SPAM DETECTED! Deleted message. pts: %d, ptsCount: %d", affectedMessages.Pts, affectedMessages.PtsCount)
+	}()
 }
 
 var channelIdCache int64
