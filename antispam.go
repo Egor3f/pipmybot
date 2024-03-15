@@ -154,7 +154,7 @@ func parseRule(rule string) (ruleDefinition, error) {
 		}
 		regStr = specificMatches[2]
 	}
-	ruleDef.regex, err = regexp.Compile(regStr)
+	ruleDef.regex, err = regexp.Compile("(?i)" + regStr)
 	if err != nil {
 		return ruleDefinition{}, fmt.Errorf("ошибка в регулярном выражении: %w", err)
 	}
