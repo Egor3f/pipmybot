@@ -169,6 +169,8 @@ func checkAndRemoveSpam(cfg Config, client *telegram.Client, msg *tg.Message, re
 	}
 	_ = accessHash
 
+	botId, _ := strconv.ParseInt(strings.Split(cfg.TelegramToken, ":")[0], 10, 64)
+
 	channel, ok := msg.GetPeerID().(*tg.PeerChannel)
 	if !ok {
 		log.Printf("Peer %v is not channel", msg.GetPeerID())
@@ -200,7 +202,7 @@ func checkAndRemoveSpam(cfg Config, client *telegram.Client, msg *tg.Message, re
 			log.Printf("Parsing rule %s error: %v", ruleStr, err)
 			continue
 		}
-		if rule.specificPeerId != 0 && rule.specificPeerId != user.GetUserID() {
+		if rule.specificPeerId != 0 && rule.specificPeerId != user.GetUserID() || user.GetUserID() == botId {
 			continue
 		}
 		if rule.regex.MatchString(msg.Message) {
