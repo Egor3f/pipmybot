@@ -21,7 +21,7 @@ services:
       - NEW_POSTS_FEED_URL=https://pipmy.ru/rss/feed/posts
       - NOVOFON_FROM=333747
       - TOAD_BOT_ID=1124824021
-      - ADMIN_IDS=$ADMIN_IDS
+      - ADMIN_IDS=766222663,5945480157,714979439
       - CHANNEL_USERNAME=pipmyru
     volumes:
       - /home/user/session.json:/app/session.json
